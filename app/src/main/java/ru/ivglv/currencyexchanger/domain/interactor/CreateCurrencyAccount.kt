@@ -5,7 +5,7 @@ import ru.ivglv.currencyexchanger.domain.port.Repository
 import javax.inject.Inject
 
 class CreateCurrencyAccount @Inject constructor(private val repository: Repository) :
-    Executable<Object>,
+    Executable<Any>,
     Interactor {
     private var name: String = "Empty"
     private var value: Float = 0f
@@ -20,5 +20,5 @@ class CreateCurrencyAccount @Inject constructor(private val repository: Reposito
         return this
     }
 
-    override fun execute(): Observable<Object> = repository.addCurrency(name, value)
+    override fun execute(): Observable<Any> = repository.addCurrency(name, value)
 }
