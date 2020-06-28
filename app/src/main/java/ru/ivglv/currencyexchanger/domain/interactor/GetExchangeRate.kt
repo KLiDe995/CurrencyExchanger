@@ -1,16 +1,15 @@
 package ru.ivglv.currencyexchanger.domain.interactor
 
-import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Single
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
-import ru.ivglv.currencyexchanger.domain.port.Repository
+import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 
 class GetExchangeRate(private val repository: Repository) :
-    Executable<ExchangeRate>,
+    Executable<Flowable<ExchangeRate>>,
     Interactor {
-    lateinit var currencyName: String
+    var baseName: String = "EmptyBase"
+    var ratedName: String = "EmptyRate"
 
-    fun setCurrency(name: String) {
-        currencyName = name
-    }
-    override fun execute(): Observable<ExchangeRate> = repository.getCurrencyExchangeRate(currencyName)
+    override fun execute(): Flowable<ExchangeRate> = repository.getCurrencyExchangeRate(baseName, ratedName)
 }

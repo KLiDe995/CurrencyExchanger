@@ -1,5 +1,6 @@
 package ru.ivglv.currencyexchanger.domain.database
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -9,6 +10,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @RunWith(AndroidJUnit4::class)
 class CurrencyAccountDaoTest {
@@ -47,10 +51,11 @@ class CurrencyAccountDaoTest {
     fun getCount() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
-            .flatMap { currencyAccountDao.getCount() }
+            .flatMap { currencyAccountDao.getCount().firstOrError() }
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
             .assertValue(3)
     }
@@ -59,25 +64,51 @@ class CurrencyAccountDaoTest {
     fun getByCurrencyName() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
-            .flatMap { currencyAccountDao.getByCurrencyName("Test2") }
+            .flatMap { currencyAccountDao.getByCurrencyName("Test2").firstOrError() }
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccountEntity("Test2", 2.0f))
+            .assertValue(CurrencyAccount("Test2", 2.0f))
 
     }
 
+    //@Test
+    fun getByCurrencyName_timeouts_whenIncorrectNameGiven() {
+        val accounts = CurrencyAccountTestHelper.createListAccounts(3)
+        currencyAccountDao.insert(accounts)
+            .flatMap { currencyAccountDao.getByCurrencyName("BadName").firstOrError() }
+            .`as`(RxJavaBridge.toV3Single())
+            .timeout(5, TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.trampoline())
+            .test()
+            .awaitCount(1)
+            .assertError(TimeoutException::class.java)
+    }
+
     @Test
-    fun insert_one() {
+    fun insert() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts[1])
-            .flatMap { currencyAccountDao.getByCurrencyName("Test1") }
+            .flatMap { currencyAccountDao.getByCurrencyName("Test1").firstOrError() }
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccountEntity("Test1", 1.0f))
+            .assertValue(CurrencyAccount("Test1", 1.0f))
+    }
+
+    @Test
+    fun insert_conflicts() {
+        val accounts = CurrencyAccountTestHelper.createListAccounts(3)
+        currencyAccountDao.insert(accounts[1])
+            .flatMap { currencyAccountDao.insert(accounts[1]) }
+            .`as`(RxJavaBridge.toV3Single())
+            .subscribeOn(Schedulers.trampoline())
+            .test()
+            .assertError(SQLiteConstraintException::class.java)
     }
 
     @Test
@@ -85,12 +116,27 @@ class CurrencyAccountDaoTest {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
             .flatMapCompletable { currencyAccountDao.update(accounts[2].apply { value = 2.2f }) }
-            .andThen(currencyAccountDao.getByCurrencyName("Test2"))
+            .andThen(currencyAccountDao.getByCurrencyName("Test2").firstOrError())
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccountEntity("Test2", 2.2f))
+            .assertValue(CurrencyAccount("Test2", 2.2f))
+    }
+
+    @Test
+    fun update_doesNothing_whenIncorrectNameGiven() {
+        val accounts = CurrencyAccountTestHelper.createListAccounts(3)
+        currencyAccountDao.insert(accounts)
+            .flatMapCompletable { currencyAccountDao.update(CurrencyAccount("BadName", 0f)) }
+            .andThen(currencyAccountDao.getByCurrencyName("Test2").firstOrError())
+            .`as`(RxJavaBridge.toV3Single())
+            .subscribeOn(Schedulers.trampoline())
+            .test()
+            .awaitCount(1)
+            .assertNoErrors()
+            .assertValue(CurrencyAccount("Test2", 2.0f))
     }
 
     @Test
@@ -111,21 +157,23 @@ class CurrencyAccountDaoTest {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
             .flatMapCompletable { currencyAccountDao.deleteAll() }
-            .andThen(currencyAccountDao.getCount())
+            .andThen(currencyAccountDao.getCount().firstOrError())
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
             .assertValue(0)
     }
 
     private object CurrencyAccountTestHelper {
-        fun createListAccounts(count: Int): List<CurrencyAccountEntity> {
-            val result = ArrayList<CurrencyAccountEntity>()
+        fun createListAccounts(count: Int): List<CurrencyAccount> {
+            val result = ArrayList<CurrencyAccount>()
             for(i in 0 until count) {
-                result.add(CurrencyAccountEntity("Test$i", i.toFloat()))
+                result.add(CurrencyAccount("Test$i", i.toFloat()))
             }
             return result
         }
+        fun createEmptyAccount() = CurrencyAccount("Empty", 0f)
     }
 }

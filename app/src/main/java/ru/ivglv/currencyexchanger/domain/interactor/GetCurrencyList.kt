@@ -1,12 +1,12 @@
 package ru.ivglv.currencyexchanger.domain.interactor
 
-import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Single
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
-import ru.ivglv.currencyexchanger.domain.port.Repository
+import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import javax.inject.Inject
 
 class GetCurrencyList @Inject constructor(private val repository: Repository) :
-    Executable<List<CurrencyAccount>>,
+    Executable<Single<List<CurrencyAccount>>>,
     Interactor {
-    override fun execute(): Observable<List<CurrencyAccount>> = repository.getCurrencyList()
+    override fun execute(): Single<List<CurrencyAccount>> = repository.getCurrencyList()
 }

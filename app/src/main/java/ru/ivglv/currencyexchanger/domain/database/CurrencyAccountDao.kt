@@ -4,23 +4,24 @@ import androidx.room.*
 import io.reactivex.Completable
 import io.reactivex.Flowable
 import io.reactivex.Single
+import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 
 @Dao
 interface CurrencyAccountDao {
     @Query("SELECT * FROM currency_accounts")
-    fun getAll(): Single<List<CurrencyAccountEntity>>
+    fun getAll(): Single<List<CurrencyAccount>>
     @Query("SELECT COUNT(*) FROM currency_accounts")
-    fun getCount(): Single<Int>
+    fun getCount(): Flowable<Int>
     @Query("SELECT * FROM currency_accounts WHERE currencyName = :name")
-    fun getByCurrencyName(name: String): Single<CurrencyAccountEntity>
+    fun getByCurrencyName(name: String): Flowable<CurrencyAccount>
     @Insert
-    fun insert(obj: CurrencyAccountEntity): Single<Long>
+    fun insert(obj: CurrencyAccount): Single<Long>
     @Insert
-    fun insert(listObj: List<CurrencyAccountEntity>): Single<List<Long>>
+    fun insert(listObj: List<CurrencyAccount>): Single<List<Long>>
     @Update
-    fun update(obj: CurrencyAccountEntity): Completable
+    fun update(obj: CurrencyAccount): Completable
     @Delete
-    fun delete(obj: CurrencyAccountEntity): Completable
+    fun delete(obj: CurrencyAccount): Completable
     @Query("DELETE FROM currency_accounts")
     fun deleteAll(): Completable
 }
