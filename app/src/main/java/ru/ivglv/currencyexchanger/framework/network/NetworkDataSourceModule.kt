@@ -5,7 +5,7 @@ import dagger.Module
 import ru.ivglv.currencyexchanger.domain.repository.datasource.NetworkDataSource
 
 @Module
-abstract class ExchangeRateSourceModule {
+abstract class NetworkDataSourceModule {
     @Binds
-    abstract fun bindExchangeRateSource(exchangeRateSourceImpl: NetworkDataSourceImpl): NetworkDataSource
+    abstract fun bindNetworkDataSource(networkDataSourceImpl: NetworkDataSourceImpl): NetworkDataSource
 }

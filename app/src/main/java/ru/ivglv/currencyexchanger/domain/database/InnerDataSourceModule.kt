@@ -5,7 +5,7 @@ import dagger.Module
 import ru.ivglv.currencyexchanger.domain.repository.datasource.InnerDataSource
 
 @Module
-abstract class InnerDatabaseModule {
+abstract class InnerDataSourceModule {
     @Binds
-    abstract fun bindInnerDatabase(innerDatabaseImpl: InnerDataSourceImpl): InnerDataSource
+    abstract fun bindInnerDataSource(innerDataSourceImpl: InnerDataSourceImpl): InnerDataSource
 }
