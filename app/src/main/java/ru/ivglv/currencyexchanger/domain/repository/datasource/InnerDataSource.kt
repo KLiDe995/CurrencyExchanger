@@ -8,6 +8,7 @@ import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 
 interface InnerDataSource {
     fun addCurrencyToDataBase(currencyAccount: CurrencyAccount): Single<Long>
+    fun addCurrencyListToDataBase(currencyAccounts: List<CurrencyAccount>): Single<List<Long>>
     fun addExchangeRateToDataBase(exchangeRate: ExchangeRate): Single<Long>
     fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable
     fun updateExchangeRate(exchangeRate: ExchangeRate): Completable

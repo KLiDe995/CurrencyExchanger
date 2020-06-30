@@ -8,13 +8,19 @@ import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import ru.ivglv.currencyexchanger.domain.repository.datasource.InnerDataSource
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class InnerDataSourceImpl @Inject constructor(
     private val currencyAccountDao: CurrencyAccountDao,
     private val exchangeRateDao: ExchangeRateDao
 ) : InnerDataSource {
     override fun addCurrencyToDataBase(currencyAccount: CurrencyAccount): Single<Long> =
         currencyAccountDao.insert(currencyAccount)
+            .`as`(RxJavaBridge.toV3Single())
+
+    override fun addCurrencyListToDataBase(currencyAccounts: List<CurrencyAccount>): Single<List<Long>> =
+        currencyAccountDao.insert(currencyAccounts)
             .`as`(RxJavaBridge.toV3Single())
 
     override fun addExchangeRateToDataBase(exchangeRate: ExchangeRate): Single<Long> =

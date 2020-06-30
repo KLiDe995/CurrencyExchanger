@@ -3,9 +3,6 @@ package ru.ivglv.currencyexchanger.domain.repository
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.kotlin.toFlowable
-import io.reactivex.rxjava3.schedulers.Schedulers
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import ru.ivglv.currencyexchanger.domain.repository.datasource.NetworkDataSource
@@ -13,17 +10,18 @@ import ru.ivglv.currencyexchanger.domain.repository.datasource.InnerDataSource
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class RepositoryImpl @Inject constructor(
     private val innerDataSource: InnerDataSource,
     private val networkDataSource: NetworkDataSource
 ) : Repository {
-    override fun addCurrency(name: String, value: Float): Single<Long> =
-        innerDataSource.addCurrencyToDataBase(CurrencyAccount(name, value))
-            /*.onErrorReturnItem(-1L)
-            .subscribeOn(Schedulers.io())
-            .flatMapPublisher { getExchangeRatesFromNetToDb(name) }
-            .subscribe()*/
+    override fun addCurrency(currencyAccount: CurrencyAccount): Single<Long> =
+        innerDataSource.addCurrencyToDataBase(currencyAccount)
+
+    override fun addCurrencyList(currencyAccountList: List<CurrencyAccount>): Single<List<Long>> =
+        innerDataSource.addCurrencyListToDataBase(currencyAccountList)
 
     override fun getCurrencyCount(): Flowable<Int> =
         innerDataSource.getCurrenciesCount()
@@ -31,8 +29,8 @@ class RepositoryImpl @Inject constructor(
     override fun getCurrencyList(): Single<List<CurrencyAccount>> =
         innerDataSource.getCurrencyList()
 
-    override fun updateCurrencyValue(name: String, newValue: Float): Completable =
-        innerDataSource.updateCurrencyValue(CurrencyAccount(name, newValue))
+    override fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable =
+        innerDataSource.updateCurrencyValue(currencyAccount)
 
     override fun getCurrencyAccount(currencyName: String): Flowable<CurrencyAccount> =
         innerDataSource.getCurrencyByName(currencyName)
