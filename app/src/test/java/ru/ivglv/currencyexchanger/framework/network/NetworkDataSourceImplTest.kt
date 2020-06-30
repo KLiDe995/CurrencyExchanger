@@ -12,7 +12,10 @@ class NetworkDataSourceImplTest {
 
     @Before
     fun setUp() {
-        api = DaggerNetworkServiceTestFactory.factory().create("https://api.exchangeratesapi.io").exchangeRateApi()
+        api = DaggerNetworkServiceTestComponent.builder()
+            .netApiBaseUrl("https://api.exchangeratesapi.io")
+            .build()
+            .exchangeRateApi()
         exchangeRateSourceImpl = NetworkDataSourceImpl(api)
     }
 

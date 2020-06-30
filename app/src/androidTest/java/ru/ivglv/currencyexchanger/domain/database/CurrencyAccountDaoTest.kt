@@ -101,6 +101,17 @@ class CurrencyAccountDaoTest {
     }
 
     @Test
+    fun insert_emptylist() {
+        val accounts = listOf<CurrencyAccount>()
+        currencyAccountDao.insert(accounts)
+            .`as`(RxJavaBridge.toV3Single())
+            .subscribeOn(Schedulers.trampoline())
+            .test()
+            .awaitCount(1)
+            .assertNoErrors()
+    }
+
+    @Test
     fun insert_conflicts() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts[1])

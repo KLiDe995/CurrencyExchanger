@@ -8,9 +8,10 @@ import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 
 interface Repository {
-    fun addCurrency(name: String, value: Float): Single<Long>
+    fun addCurrency(currencyAccount: CurrencyAccount): Single<Long>
+    fun addCurrencyList(currencyAccountList: List<CurrencyAccount>): Single<List<Long>>
     fun addExchangeRate(exchangeRate: ExchangeRate): Single<Long>
-    fun updateCurrencyValue(name: String, newValue: Float): Completable
+    fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable
     fun updateExchangeRate(exchangeRate: ExchangeRate): Completable
     fun getCurrencyCount(): Flowable<Int>
     fun getCurrencyList(): Single<List<CurrencyAccount>>
