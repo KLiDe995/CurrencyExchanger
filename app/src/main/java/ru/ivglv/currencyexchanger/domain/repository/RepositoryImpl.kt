@@ -41,12 +41,6 @@ class RepositoryImpl @Inject constructor(
     override fun downloadExchangeRatesInPeriod(currencyName: String, periodSec: Long): Flowable<List<ExchangeRate>> =
         networkDataSource.getRatesForBase(currencyName)
             .repeatWhen { it.delay(periodSec, TimeUnit.SECONDS) }
-            /*.subscribeOn(Schedulers.io())
-            .flatMap {
-                it.toFlowable()
-                    .subscribeOn(Schedulers.io())
-                    .flatMapSingle { exchangeRate -> addOrUpdateExchangeRate(exchangeRate) }
-            }*/
 
     override fun addExchangeRate(exchangeRate: ExchangeRate): Single<Long> =
         innerDataSource.addExchangeRateToDataBase(exchangeRate)

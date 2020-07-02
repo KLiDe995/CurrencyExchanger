@@ -55,9 +55,9 @@ class ExchangerPresenter : BasePresenter<ExchangerView>() {
 
     private fun getStarterCurrencyPack() =
         listOf(
-            Pair("USD", 100f),
-            Pair("EUR", 100f),
-            Pair("GBP", 100f)
+            CurrencyAccount("USD", 100f, '$'),
+            CurrencyAccount("EUR", 100f, '€'),
+            CurrencyAccount("GBP", 100f, '£')
         ) // TODO: вынести в конфигурацию
 
     private fun startRatesUpdate() {

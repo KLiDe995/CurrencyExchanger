@@ -70,7 +70,7 @@ class CurrencyAccountDaoTest {
             .test()
             .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccount("Test2", 2.0f))
+            .assertValue(accounts[2])
 
     }
 
@@ -97,7 +97,7 @@ class CurrencyAccountDaoTest {
             .test()
             .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccount("Test1", 1.0f))
+            .assertValue(accounts[1])
     }
 
     @Test
@@ -133,21 +133,21 @@ class CurrencyAccountDaoTest {
             .test()
             .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccount("Test2", 2.2f))
+            .assertValue(CurrencyAccount("Test2", 2.2f, 'x'))
     }
 
     @Test
     fun update_doesNothing_whenIncorrectNameGiven() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
-            .flatMapCompletable { currencyAccountDao.update(CurrencyAccount("BadName", 0f)) }
+            .flatMapCompletable { currencyAccountDao.update(CurrencyAccount("BadName", 0f, 'x')) }
             .andThen(currencyAccountDao.getByCurrencyName("Test2").firstOrError())
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
             .awaitCount(1)
             .assertNoErrors()
-            .assertValue(CurrencyAccount("Test2", 2.0f))
+            .assertValue(accounts[2])
     }
 
     @Test
@@ -181,10 +181,10 @@ class CurrencyAccountDaoTest {
         fun createListAccounts(count: Int): List<CurrencyAccount> {
             val result = ArrayList<CurrencyAccount>()
             for(i in 0 until count) {
-                result.add(CurrencyAccount("Test$i", i.toFloat()))
+                result.add(CurrencyAccount("Test$i", i.toFloat(), 'x'))
             }
             return result
         }
-        fun createEmptyAccount() = CurrencyAccount("Empty", 0f)
+        fun createEmptyAccount() = CurrencyAccount("Empty", 0f, 'x')
     }
 }

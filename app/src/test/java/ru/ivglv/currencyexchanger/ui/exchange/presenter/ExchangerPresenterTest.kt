@@ -29,9 +29,9 @@ class ExchangerPresenterTest {
     private val testedRates1 = PresenterTestHelper.createListRates(3, "First")
     private val testedRates2 = PresenterTestHelper.createListRates(3, "Second")
     private val standartCurrencies = listOf(
-        CurrencyAccount("USD", 100f),
-        CurrencyAccount("EUR", 100f),
-        CurrencyAccount("GBP", 100f)
+        CurrencyAccount("USD", 100f, '$'),
+        CurrencyAccount("EUR", 100f, '€'),
+        CurrencyAccount("GBP", 100f, '£')
     )
 
     @Before
@@ -184,10 +184,10 @@ class ExchangerPresenterTest {
         fun createListAccounts(count: Int): List<CurrencyAccount> {
             val result = ArrayList<CurrencyAccount>()
             for(i in 0 until count) {
-                result.add(CurrencyAccount("Test$i", i.toFloat()))
+                result.add(CurrencyAccount("Test$i", i.toFloat(), 'x'))
             }
             return result
         }
-        fun createEmptyAccount() = CurrencyAccount("Empty", 0f)
+        fun createEmptyAccount() = CurrencyAccount("Empty", 0f, 'x')
     }
 }

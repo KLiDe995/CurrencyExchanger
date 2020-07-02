@@ -8,8 +8,8 @@ import javax.inject.Inject
 
 class CreateCurrencyAccountList @Inject constructor(private val repository: Repository) :
     Executable<Single<List<Long>>> {
-    var currencies: List<Pair<String, Float>> = listOf()
+    var currencies: List<CurrencyAccount> = listOf()
 
-    override fun execute(): Single<List<Long>> = repository.addCurrencyList(currencies.map { CurrencyAccount(it.first, it.second) })
+    override fun execute(): Single<List<Long>> = repository.addCurrencyList(currencies)
 
 }

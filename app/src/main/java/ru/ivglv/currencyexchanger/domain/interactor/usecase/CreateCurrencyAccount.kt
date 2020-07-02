@@ -10,7 +10,8 @@ class CreateCurrencyAccount @Inject constructor(private val repository: Reposito
     Executable<Single<Long>> {
     var name: String = "Empty"
     var value: Float = 0f
+    var symbol: Char = 'x'
 
-    override fun execute(): Single<Long> = repository.addCurrency(CurrencyAccount(name,value))
+    override fun execute(): Single<Long> = repository.addCurrency(CurrencyAccount(name, value, symbol))
 
 }

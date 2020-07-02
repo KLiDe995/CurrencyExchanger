@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class CurrencyAccount(
     @PrimaryKey
     var currencyName: String,
-    var value: Float
+    var value: Float,
+    var currencySymbol: Char
 ) {}

@@ -13,7 +13,7 @@ class UpdateCurrencyValueTest {
 
     @Test
     fun execute() {
-        val testedCurrency = CurrencyAccount("TestName", 1f)
+        val testedCurrency = CurrencyAccount("TestName", 1f, 'x')
         val mock = mock<Repository> {
             on { updateCurrencyValue(testedCurrency) } doReturn Completable.complete()
         }
@@ -30,7 +30,7 @@ class UpdateCurrencyValueTest {
 
     @Test
     fun execute_throws_whenInputNull() {
-        val testedCurrency = CurrencyAccount("TestName", 1f)
+        val testedCurrency = CurrencyAccount("TestName", 1f, 'x')
         val mock = mock<Repository> {
             on { updateCurrencyValue(testedCurrency) } doReturn Completable.complete()
         }
