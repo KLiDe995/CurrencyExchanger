@@ -1,5 +1,6 @@
 package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.reactivex.rxjava3.core.Completable
@@ -12,6 +13,7 @@ import org.junit.*
 import org.junit.Assert.*
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnit
+import org.mockito.verification.VerificationMode
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import ru.ivglv.currencyexchanger.domain.interactor.usecase.*
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
@@ -24,8 +26,13 @@ class ExchangerPresenterTest {
     private val exchangerPresenter = ExchangerPresenter()
     private lateinit var repository: Repository
     private val testedCurrencies = PresenterTestHelper.createListAccounts(2)
-    private val testedRates1 = PresenterTestHelper.createListRates(3)
-    private val testedRates2 = PresenterTestHelper.createListRates(3)
+    private val testedRates1 = PresenterTestHelper.createListRates(3, "First")
+    private val testedRates2 = PresenterTestHelper.createListRates(3, "Second")
+    private val standartCurrencies = listOf(
+        CurrencyAccount("USD", 100f),
+        CurrencyAccount("EUR", 100f),
+        CurrencyAccount("GBP", 100f)
+    )
 
     @Before
     fun setUp() {
@@ -59,10 +66,47 @@ class ExchangerPresenterTest {
             .thenReturn(Completable.complete())
         whenever(repository.updateExchangeRate(testedRates2[2]))
             .thenReturn(Completable.complete())
+        whenever(repository.addCurrencyList(standartCurrencies))
+            .thenReturn(Single.just(listOf(1L, 2L, 3L)))
     }
 
     @After
     fun tearDown() {
+    }
+
+    @Test
+    fun initCurrencies_doNothing_whenCurrenciesExists() {
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("initCurrencies")
+        testMethod.isAccessible = true
+        val disposable = testMethod.invoke(exchangerPresenter) as Disposable
+
+        verify(repository, never()).addCurrencyList(standartCurrencies)
+        Thread.sleep(500)
+        assertTrue(disposable.isDisposed)
+    }
+
+    @Test
+    fun initCurrencies_addedStandartCurrencoes_whenCurrenciesEmpty() {
+        whenever(repository.getCurrencyCount()).thenReturn(Flowable.just(0))
+
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("initCurrencies")
+        testMethod.isAccessible = true
+        val disposable = testMethod.invoke(exchangerPresenter) as Disposable
+
+        verify(repository).addCurrencyList(standartCurrencies)
+        Thread.sleep(500)
+        assertTrue(disposable.isDisposed)
+    }
+
+    @Test
+    fun addStarterCurrencies() {
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("addStarterCurrencies")
+        testMethod.isAccessible = true
+        val disposable = testMethod.invoke(exchangerPresenter) as Disposable
+
+        verify(repository).addCurrencyList(standartCurrencies)
+        Thread.sleep(500)
+        assertTrue(disposable.isDisposed)
     }
 
     @Test
@@ -82,12 +126,12 @@ class ExchangerPresenterTest {
 
         Thread.sleep(500)
         assertTrue(compositeDisposable.size() > 0)
-        assertTrue(compositeDisposable.isDisposed)
+        compositeDisposable.clear()
+        compositeDisposable.dispose()
     }
 
     @Test
     fun updateRatesForCurrency() {
-
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateRatesForCurrency", CurrencyAccount::class.java)
         testMethod.isAccessible = true
         val disposable = testMethod.invoke(exchangerPresenter, testedCurrencies[0]) as Disposable
@@ -127,10 +171,10 @@ class ExchangerPresenterTest {
     }
 
     private object PresenterTestHelper {
-        fun createListRates(count: Int): List<ExchangeRate> {
+        fun createListRates(count: Int, prefix: String = ""): List<ExchangeRate> {
             val result = ArrayList<ExchangeRate>()
             for(i in 0 until count) {
-                result.add(ExchangeRate("TestBase$i", "TestRated$i", i.toFloat()))
+                result.add(ExchangeRate("${prefix}TestBase$i", "${prefix}TestRated$i", i.toFloat()))
             }
             return result
         }

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">CurrencyExchanger</string>
+    <string name="put_hint">Put</string>
+    <string name="get_hint">Get</string>
 </resources>

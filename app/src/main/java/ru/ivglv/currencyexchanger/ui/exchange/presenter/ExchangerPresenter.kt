@@ -33,7 +33,7 @@ class ExchangerPresenter : BasePresenter<ExchangerView>() {
         startRatesUpdate()
     }
 
-    private fun initCurrencies() {
+    private fun initCurrencies() =
         currencyAccountInteractor.getCurrencyCount.execute()
             .subscribeOn(schedulerProvider.io())
             .firstOrError()
@@ -41,9 +41,8 @@ class ExchangerPresenter : BasePresenter<ExchangerView>() {
                 onSuccess = { if(it == 0) addStarterCurrencies() },
                 onError = { it.printStackTrace() } // TODO: Log
             )
-    }
 
-    private fun addStarterCurrencies() {
+    private fun addStarterCurrencies() =
         currencyAccountInteractor.createCurrencyAccountList
             .apply {
                 currencies = getStarterCurrencyPack()
@@ -53,7 +52,6 @@ class ExchangerPresenter : BasePresenter<ExchangerView>() {
             .subscribeBy(
                 onError = { it.printStackTrace() } // TODO: Log
             )
-    }
 
     private fun getStarterCurrencyPack() =
         listOf(
