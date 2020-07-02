@@ -7,10 +7,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SchedulerProvider @Inject constructor() : BaseSchedulerProvider {
-    override fun io(): Scheduler = Schedulers.io()
+class TrampolineSchedulerProvider @Inject constructor() :BaseSchedulerProvider {
+    override fun io(): Scheduler = Schedulers.trampoline()
 
-    override fun computation(): Scheduler = Schedulers.computation()
+    override fun computation(): Scheduler = Schedulers.trampoline()
 
-    override fun ui(): Scheduler = AndroidSchedulers.mainThread()
+    override fun ui(): Scheduler = Schedulers.trampoline()
 }
