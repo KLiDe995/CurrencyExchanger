@@ -26,7 +26,7 @@ class RepositoryImpl @Inject constructor(
     override fun getCurrencyCount(): Flowable<Int> =
         innerDataSource.getCurrenciesCount()
 
-    override fun getCurrencyList(): Single<List<CurrencyAccount>> =
+    override fun getCurrencyList(): Flowable<List<CurrencyAccount>> =
         innerDataSource.getCurrencyList()
 
     override fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable =

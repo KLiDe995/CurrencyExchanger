@@ -14,7 +14,7 @@ interface Repository {
     fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable
     fun updateExchangeRate(exchangeRate: ExchangeRate): Completable
     fun getCurrencyCount(): Flowable<Int>
-    fun getCurrencyList(): Single<List<CurrencyAccount>>
+    fun getCurrencyList(): Flowable<List<CurrencyAccount>>
     fun getCurrencyAccount(currencyName: String): Flowable<CurrencyAccount>
     fun getCurrencyExchangeRate(currencyName: String, ratedName: String): Flowable<ExchangeRate>
     fun downloadExchangeRatesInPeriod(currencyName: String, periodSec: Long): Flowable<List<ExchangeRate>>

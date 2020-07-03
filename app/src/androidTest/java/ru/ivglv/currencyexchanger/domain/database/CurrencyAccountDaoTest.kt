@@ -39,10 +39,12 @@ class CurrencyAccountDaoTest {
     fun getAll() {
         val accounts = CurrencyAccountTestHelper.createListAccounts(3)
         currencyAccountDao.insert(accounts)
-            .flatMap { currencyAccountDao.getAll() }
-            .`as`(RxJavaBridge.toV3Single())
+            .flatMapPublisher { currencyAccountDao.getAll() }
+            .`as`(RxJavaBridge.toV3Flowable())
+            .firstOrError()
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
             .assertValue(accounts)
     }
@@ -156,9 +158,11 @@ class CurrencyAccountDaoTest {
         currencyAccountDao.insert(accounts)
             .flatMapCompletable { currencyAccountDao.delete(accounts[1]) }
             .andThen(currencyAccountDao.getAll())
-            .`as`(RxJavaBridge.toV3Single())
+            .`as`(RxJavaBridge.toV3Flowable())
+            .firstOrError()
             .subscribeOn(Schedulers.trampoline())
             .test()
+            .awaitCount(1)
             .assertNoErrors()
             .assertValue(accounts.toMutableList().apply { removeAt(1) })
     }

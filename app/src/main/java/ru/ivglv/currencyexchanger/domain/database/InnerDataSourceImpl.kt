@@ -38,9 +38,9 @@ class InnerDataSourceImpl @Inject constructor(
     override fun getCurrenciesCount(): Flowable<Int> =
         currencyAccountDao.getCount().`as`(RxJavaBridge.toV3Flowable())
 
-    override fun getCurrencyList(): Single<List<CurrencyAccount>> =
+    override fun getCurrencyList(): Flowable<List<CurrencyAccount>> =
         currencyAccountDao.getAll()
-            .`as`(RxJavaBridge.toV3Single())
+            .`as`(RxJavaBridge.toV3Flowable())
 
     override fun getCurrencyByName(name: String): Flowable<CurrencyAccount> =
         currencyAccountDao.getByCurrencyName(name)

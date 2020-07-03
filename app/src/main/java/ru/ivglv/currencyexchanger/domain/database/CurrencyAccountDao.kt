@@ -9,7 +9,7 @@ import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 @Dao
 interface CurrencyAccountDao {
     @Query("SELECT * FROM currency_accounts")
-    fun getAll(): Single<List<CurrencyAccount>>
+    fun getAll(): Flowable<List<CurrencyAccount>>
     @Query("SELECT COUNT(*) FROM currency_accounts")
     fun getCount(): Flowable<Int>
     @Query("SELECT * FROM currency_accounts WHERE currencyName = :name")

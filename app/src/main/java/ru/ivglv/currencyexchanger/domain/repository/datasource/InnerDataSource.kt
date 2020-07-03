@@ -13,7 +13,7 @@ interface InnerDataSource {
     fun updateCurrencyValue(currencyAccount: CurrencyAccount): Completable
     fun updateExchangeRate(exchangeRate: ExchangeRate): Completable
     fun getCurrenciesCount(): Flowable<Int>
-    fun getCurrencyList(): Single<List<CurrencyAccount>>
+    fun getCurrencyList(): Flowable<List<CurrencyAccount>>
     fun getCurrencyByName(name: String): Flowable<CurrencyAccount>
     fun getCurrencyExchangeRate(currencyName: String, ratedName: String): Flowable<ExchangeRate>
 }

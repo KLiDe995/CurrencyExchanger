@@ -8,6 +8,6 @@ import javax.inject.Inject
 
 class GetCurrencyAccount @Inject constructor(private val repository: Repository) :
     Executable<Flowable<CurrencyAccount>> {
-    private var requiredCurrencyName: String = "Empty"
+    var requiredCurrencyName: String = "Empty"
     override fun execute(): Flowable<CurrencyAccount> = repository.getCurrencyAccount(requiredCurrencyName)
 }
