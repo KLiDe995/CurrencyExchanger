@@ -9,10 +9,10 @@ import moxy.presenter.InjectPresenter
 import moxy.presenter.ProvidePresenter
 import ru.ivglv.currencyexchanger.ExchangeApp
 import ru.ivglv.currencyexchanger.R
-import ru.ivglv.currencyexchanger.di.AppComponent
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.CurrencyCardPresenter
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
+import kotlin.text.*
 
 class CurrencyPagerAdapter(
     private val parentDelegate: MvpDelegate<*>,
@@ -30,14 +30,14 @@ class CurrencyPagerAdapter(
         val view = LayoutInflater.from(container.context).inflate(cardCurrencylayout, container, false)
         setLabels(view, position)
         container.addView(view)
-        return super.instantiateItem(container, position)
+        return view
     }
 
     override fun isViewFromObject(view: View, `object`: Any): Boolean =
         view == `object`
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
-        super.destroyItem(container, position, `object`)
+        container.removeViewAt(position)
     }
 
     override fun getCount(): Int =

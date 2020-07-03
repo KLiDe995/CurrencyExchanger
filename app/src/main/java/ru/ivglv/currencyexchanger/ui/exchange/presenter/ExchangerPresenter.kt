@@ -1,11 +1,10 @@
 package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
-import com.arellomobile.mvp.InjectViewState
 import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.kotlin.addTo
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.kotlin.toFlowable
+import moxy.InjectViewState
 import ru.ivglv.currencyexchanger.ExchangeApp
 import ru.ivglv.currencyexchanger.domain.interactor.CurrencyAccountInteractor
 import ru.ivglv.currencyexchanger.domain.interactor.ExchangeRateInteractor
@@ -16,19 +15,15 @@ import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.ExchangerView
 import javax.inject.Inject
 
 @InjectViewState
-class ExchangerPresenter : BasePresenter<ExchangerView>() {
-    @Inject
-    lateinit var currencyAccountInteractor: CurrencyAccountInteractor
-    @Inject
-    lateinit var exchangeRateInteractor: ExchangeRateInteractor
-    @Inject
-    lateinit var schedulerProvider: BaseSchedulerProvider
-
+class ExchangerPresenter @Inject constructor(
+    private var currencyAccountInteractor: CurrencyAccountInteractor,
+    private var exchangeRateInteractor: ExchangeRateInteractor,
+    private var schedulerProvider: BaseSchedulerProvider
+) : BasePresenter<ExchangerView>() {
     private var currencyNetSubscribers = CompositeDisposable()
 
 
     override fun onFirstViewAttach() {
-        ExchangeApp.appComponent.inject(this)
         initCurrencies()
         startRatesUpdate()
     }
@@ -65,6 +60,7 @@ class ExchangerPresenter : BasePresenter<ExchangerView>() {
             .subscribeOn(schedulerProvider.io())
             .flatMapSingle {
                 currencyAccountInteractor.getCurrencyList.execute()
+                    .firstOrError()
                     .subscribeOn(schedulerProvider.io())
                     .doOnSuccess { updateRatesForCurrencyList(it) }
             }

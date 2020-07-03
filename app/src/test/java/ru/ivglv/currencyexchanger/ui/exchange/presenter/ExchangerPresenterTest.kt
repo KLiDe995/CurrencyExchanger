@@ -11,23 +11,17 @@ import io.reactivex.rxjava3.disposables.Disposable
 import org.junit.*
 
 import org.junit.Assert.*
-import org.mockito.Mock
-import org.mockito.junit.MockitoJUnit
-import org.mockito.verification.VerificationMode
+import ru.ivglv.currencyexchanger.TestHelper
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
-import ru.ivglv.currencyexchanger.domain.interactor.usecase.*
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
-import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import java.lang.Exception
-import java.lang.RuntimeException
-import java.lang.reflect.Method
 
 class ExchangerPresenterTest {
-    private val exchangerPresenter = ExchangerPresenter()
+    private lateinit var exchangerPresenter: ExchangerPresenter
     private lateinit var repository: Repository
-    private val testedCurrencies = PresenterTestHelper.createListAccounts(2)
-    private val testedRates1 = PresenterTestHelper.createListRates(3, "First")
-    private val testedRates2 = PresenterTestHelper.createListRates(3, "Second")
+    private val testedCurrencies = TestHelper.createListAccounts(2)
+    private val testedRates1 = TestHelper.createListRates(3, "First")
+    private val testedRates2 = TestHelper.createListRates(3, "Second")
     private val standartCurrencies = listOf(
         CurrencyAccount("USD", 100f, '$'),
         CurrencyAccount("EUR", 100f, '€'),
@@ -36,14 +30,14 @@ class ExchangerPresenterTest {
 
     @Before
     fun setUp() {
-        val daggerTestComponent = DaggerExchangePresenterTestComponent.create()
-        daggerTestComponent.inject(exchangerPresenter)
+        val daggerTestComponent = DaggerPresenterTestComponent.create()
+        exchangerPresenter = daggerTestComponent.exchangerPresenter()
         repository = daggerTestComponent.getRepositoryMock()
 
         whenever(repository.getCurrencyCount())
             .thenReturn(Flowable.just(2))
         whenever(repository.getCurrencyList())
-            .thenReturn(Single.just(testedCurrencies))
+            .thenReturn(Flowable.just(testedCurrencies))
         whenever(repository.downloadExchangeRatesInPeriod(testedCurrencies[0].currencyName, 30))
             .thenReturn(Flowable.just(testedRates1))
         whenever(repository.downloadExchangeRatesInPeriod(testedCurrencies[1].currencyName, 30))
@@ -126,7 +120,6 @@ class ExchangerPresenterTest {
 
         Thread.sleep(500)
         assertTrue(compositeDisposable.size() > 0)
-        compositeDisposable.clear()
         compositeDisposable.dispose()
     }
 
@@ -168,26 +161,5 @@ class ExchangerPresenterTest {
         verify(repository).updateExchangeRate(testedRates2[2])
         Thread.sleep(500)
         assertTrue(disposable.isDisposed)
-    }
-
-    private object PresenterTestHelper {
-        fun createListRates(count: Int, prefix: String = ""): List<ExchangeRate> {
-            val result = ArrayList<ExchangeRate>()
-            for(i in 0 until count) {
-                result.add(ExchangeRate("${prefix}TestBase$i", "${prefix}TestRated$i", i.toFloat()))
-            }
-            return result
-        }
-
-        fun createEmptyRate() = ExchangeRate("EmptyBase", "EmptyRate", 0f)
-
-        fun createListAccounts(count: Int): List<CurrencyAccount> {
-            val result = ArrayList<CurrencyAccount>()
-            for(i in 0 until count) {
-                result.add(CurrencyAccount("Test$i", i.toFloat(), 'x'))
-            }
-            return result
-        }
-        fun createEmptyAccount() = CurrencyAccount("Empty", 0f, 'x')
     }
 }
