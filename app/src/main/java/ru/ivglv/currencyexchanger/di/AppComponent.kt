@@ -5,6 +5,7 @@ import dagger.BindsInstance
 import dagger.Component
 import ru.ivglv.currencyexchanger.di.modules.*
 import ru.ivglv.currencyexchanger.framework.network.BaseUrl
+import ru.ivglv.currencyexchanger.ui.exchange.presenter.CurrencyCardPresenter
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.ExchangerPresenter
 import javax.inject.Singleton
 
@@ -18,7 +19,8 @@ import javax.inject.Singleton
     SchedulerModule::class
 ])
 interface AppComponent {
-    fun inject(exchangerPresenter: ExchangerPresenter)
+    fun exchangerPresenter(): ExchangerPresenter
+    fun currencyCardPresenter(): CurrencyCardPresenter
 
     @Component.Builder
     interface Builder {

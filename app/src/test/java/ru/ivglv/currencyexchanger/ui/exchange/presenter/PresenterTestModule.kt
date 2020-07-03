@@ -7,11 +7,15 @@ import org.mockito.Mockito
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import ru.ivglv.currencyexchanger.domain.interactor.usecase.*
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
+import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
 import javax.inject.Singleton
 
 @Module
-class ExchangePresenterTestModule {
+class PresenterTestModule {
     @Provides
     @Singleton
     fun provideRepository(): Repository = mock()
+
+    @Provides
+    fun provideCurrencyAccountView(): CurrencyAccountView = mock()
 }

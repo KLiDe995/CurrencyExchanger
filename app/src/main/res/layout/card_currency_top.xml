@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="200dp"
     android:layout_margin="15dp"
-    app:cardCornerRadius="5dp"
+    app:cardCornerRadius="15dp"
     app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -13,7 +13,6 @@
         android:layout_height="match_parent">
 
         <ImageView
-            android:id="@+id/imageView"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -57,7 +56,7 @@
             app:layout_constraintEnd_toEndOf="parent">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/putValueInput"
+                android:id="@+id/exchangeValueInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="right"
