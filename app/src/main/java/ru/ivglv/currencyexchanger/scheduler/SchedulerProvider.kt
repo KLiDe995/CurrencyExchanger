@@ -13,4 +13,6 @@ class SchedulerProvider @Inject constructor() : BaseSchedulerProvider {
     override fun computation(): Scheduler = Schedulers.computation()
 
     override fun ui(): Scheduler = AndroidSchedulers.mainThread()
+
+    override fun single(): Scheduler = Schedulers.single()
 }

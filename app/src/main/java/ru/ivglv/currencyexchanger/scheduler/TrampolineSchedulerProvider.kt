@@ -13,4 +13,6 @@ class TrampolineSchedulerProvider @Inject constructor() :BaseSchedulerProvider {
     override fun computation(): Scheduler = Schedulers.trampoline()
 
     override fun ui(): Scheduler = Schedulers.trampoline()
+
+    override fun single(): Scheduler = Schedulers.trampoline()
 }
