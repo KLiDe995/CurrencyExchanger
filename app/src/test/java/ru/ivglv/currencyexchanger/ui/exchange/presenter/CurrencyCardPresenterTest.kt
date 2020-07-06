@@ -4,10 +4,13 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.kotlin.subscribeBy
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import ru.ivglv.currencyexchanger.TestHelper
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
+import ru.ivglv.currencyexchanger.domain.model.ExchangeInput
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
 
 class CurrencyCardPresenterTest {
@@ -27,6 +30,7 @@ class CurrencyCardPresenterTest {
         whenever(repository.getCurrencyCount()).thenReturn(Flowable.just(2))
         whenever(repository.getCurrencyList()).thenReturn(Flowable.just(testedCurrencies))
         whenever(currencyAccountView.updateCurrencies(testedCurrencies)).then {  }
+        whenever(currencyAccountView.clearExchangeValueTextInput()).then {  }
     }
 
     @Test
@@ -40,5 +44,20 @@ class CurrencyCardPresenterTest {
         verify(repository).getCurrencyList()
         verify(currencyAccountView).updateCurrencies(testedCurrencies)
         compositeDisposable.dispose()
+    }
+
+    @Test
+    fun exchangeValueInputChanged() {
+        currencyCardPresenter.exchangeValueInputChanged("NewValuePut", ExchangeInput.CurrencyCardType.PUT)
+        currencyCardPresenter.exchangeValueInputChanged("NewValueGet", ExchangeInput.CurrencyCardType.GET)
+        ExchangeInput.putterValueObservable
+            .test()
+            .awaitCount(1)
+            .assertValue("NewValuePut")
+
+        ExchangeInput.getterValueObservable
+            .test()
+            .awaitCount(1)
+            .assertValue("NewValueGet")
     }
 }

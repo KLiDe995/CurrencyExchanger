@@ -60,8 +60,8 @@ class ExchangeRateDaoTest {
         val rates = ExchangeRateTestHelper.createListRates(3)
         exchangeRateDao.insert(rates)
             .flatMap { exchangeRateDao
-                .getByRatePair("TestBase2", "TestRated2")
-                .firstOrError() }
+                .getByRatePair("TestBase2", "TestRated2").firstOrError()
+            }
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
@@ -76,8 +76,8 @@ class ExchangeRateDaoTest {
         val rates = ExchangeRateTestHelper.createListRates(3)
         exchangeRateDao.insert(rates[1])
             .flatMap { exchangeRateDao
-                .getByRatePair("TestBase1", "TestRated1")
-                .firstOrError() }
+                .getByRatePair("TestBase1", "TestRated1").firstOrError()
+            }
             .`as`(RxJavaBridge.toV3Single())
             .subscribeOn(Schedulers.trampoline())
             .test()
