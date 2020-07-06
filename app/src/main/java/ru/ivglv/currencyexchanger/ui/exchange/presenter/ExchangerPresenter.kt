@@ -1,5 +1,6 @@
 package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
+import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.BiFunction
@@ -179,10 +180,7 @@ class ExchangerPresenter @Inject constructor(
 
     private fun updateRateInfo() {
         if(currencyList == null) return
-        getCurrencyPairFlowable(
-            currencyList!![ExchangeInput.putterCurrencyIndex],
-            currencyList!![ExchangeInput.getterCurrencyIndex]
-        )
+        getCurrencyPairFlowable()
             .distinct()
             .subscribeOn(schedulerProvider.io())
             .doOnNext { Timber.d("Changed currencies. Updating rate label: %s", it) }
@@ -200,17 +198,15 @@ class ExchangerPresenter @Inject constructor(
             ).addTo(rateLabelUpdateFlows)
     }
 
-    private fun getCurrencyPairFlowable(firstCurrency: CurrencyAccount, secondCurrency: CurrencyAccount) =
+    private fun getCurrencyPairFlowable() =
         Flowable.zip(
-            currencyAccountInteractor.getCurrencyAccount
-                .apply { requiredCurrencyName = firstCurrency.currencyName }
-                .execute(),
-            currencyAccountInteractor.getCurrencyAccount
-                .apply { requiredCurrencyName = secondCurrency.currencyName }
-                .execute(),
-            BiFunction<CurrencyAccount, CurrencyAccount, Pair<CurrencyAccount, CurrencyAccount>> {
-                baseCurrency, ratedCurrency ->
-                Pair(baseCurrency, ratedCurrency)
+            ExchangeInput.putterCurrencyIndexObservable
+                .toFlowable(BackpressureStrategy.LATEST),
+            ExchangeInput.getterCurrencyIndexObservable
+                .toFlowable(BackpressureStrategy.LATEST),
+            BiFunction<Int, Int, Pair<CurrencyAccount, CurrencyAccount>> {
+                baseCurrencyIndex, ratedCurrencyIndex ->
+                Pair(currencyList!![baseCurrencyIndex], currencyList!![ratedCurrencyIndex])
             }
         )
 

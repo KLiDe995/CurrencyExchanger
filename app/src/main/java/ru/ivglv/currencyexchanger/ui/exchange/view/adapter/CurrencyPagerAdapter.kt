@@ -1,12 +1,9 @@
 package ru.ivglv.currencyexchanger.ui.exchange.view.adapter
 
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
 import com.google.android.material.textfield.TextInputEditText
 import moxy.MvpDelegate
@@ -19,20 +16,20 @@ import ru.ivglv.currencyexchanger.domain.model.ExchangeInput
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.CurrencyCardPresenter
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
 import timber.log.Timber
-import kotlin.text.*
 
 class CurrencyPagerAdapter(
     private val parentDelegate: MvpDelegate<*>,
     private val cardType: ExchangeInput.CurrencyCardType,
     private val cardCurrencylayout: Int
 ) : MvpBasePagerAdapter(parentDelegate, cardType.toString()), CurrencyAccountView {
+
     @InjectPresenter
     lateinit var currencyCardPresenter: CurrencyCardPresenter
-    private var currencyAccountList = listOf<CurrencyAccount>()
-    private var exchangeInputTextEditList = mutableListOf<TextInputEditText>()
-
     @ProvidePresenter
     fun providePresenter(): CurrencyCardPresenter = ExchangeApp.appComponent.currencyCardPresenter()
+
+    private var currencyAccountList = listOf<CurrencyAccount>()
+    private var exchangeInputTextEditList = mutableListOf<TextInputEditText>()
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val view = LayoutInflater.from(container.context).inflate(cardCurrencylayout, container, false)
@@ -73,10 +70,6 @@ class CurrencyPagerAdapter(
                     currencyCardPresenter.setInputFocus(cardType)
                 }
             }
-    }
-
-    override fun clearExchangeValueTextInput() {
-        exchangeInputTextEditList.forEach { it.setText("") }
     }
 
     override fun updateCurrencies(updatedCurrencies: List<CurrencyAccount>) {

@@ -8,6 +8,7 @@ import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import ru.ivglv.currencyexchanger.domain.interactor.usecase.*
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
+import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.ExchangerView
 import javax.inject.Singleton
 
 @Module
@@ -18,4 +19,7 @@ class PresenterTestModule {
 
     @Provides
     fun provideCurrencyAccountView(): CurrencyAccountView = mock()
+
+    @Provides
+    fun provideExchangerView(): ExchangerView = mock()
 }

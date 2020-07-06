@@ -9,7 +9,5 @@ interface CurrencyAccountView : MvpView {
     @AddToEndSingle
     fun updateCurrencies(updatedCurrencies: List<CurrencyAccount>)
     @AddToEndSingle
-    fun clearExchangeValueTextInput()
-    @AddToEndSingle
     fun updateRecountedValueLabel(recountedValuePair: Pair<Float, Float>)
 }

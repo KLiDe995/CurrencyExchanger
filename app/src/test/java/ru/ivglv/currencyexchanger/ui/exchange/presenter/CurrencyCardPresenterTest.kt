@@ -30,7 +30,6 @@ class CurrencyCardPresenterTest {
         whenever(repository.getCurrencyCount()).thenReturn(Flowable.just(2))
         whenever(repository.getCurrencyList()).thenReturn(Flowable.just(testedCurrencies))
         whenever(currencyAccountView.updateCurrencies(testedCurrencies)).then {  }
-        whenever(currencyAccountView.clearExchangeValueTextInput()).then {  }
     }
 
     @Test

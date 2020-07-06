@@ -14,11 +14,14 @@ import org.junit.Assert.*
 import ru.ivglv.currencyexchanger.TestHelper
 import ru.ivglv.currencyexchanger.domain.interactor.repository.Repository
 import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
+import ru.ivglv.currencyexchanger.domain.model.ExchangeInput
+import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.ExchangerView
 import java.lang.Exception
 
 class ExchangerPresenterTest {
     private lateinit var exchangerPresenter: ExchangerPresenter
     private lateinit var repository: Repository
+    private lateinit var exchangerView: ExchangerView
     private val testedCurrencies = TestHelper.createListAccounts(2)
     private val testedRates1 = TestHelper.createListRates(3, "First")
     private val testedRates2 = TestHelper.createListRates(3, "Second")
@@ -33,6 +36,7 @@ class ExchangerPresenterTest {
         val daggerTestComponent = DaggerPresenterTestComponent.create()
         exchangerPresenter = daggerTestComponent.exchangerPresenter()
         repository = daggerTestComponent.getRepositoryMock()
+        exchangerView = daggerTestComponent.getExchangeViewMock()
 
         whenever(repository.getCurrencyCount())
             .thenReturn(Flowable.just(2))
@@ -62,6 +66,14 @@ class ExchangerPresenterTest {
             .thenReturn(Completable.complete())
         whenever(repository.addCurrencyList(standartCurrencies))
             .thenReturn(Single.just(listOf(1L, 2L, 3L)))
+        whenever(repository.getCurrencyExchangeRate(testedCurrencies[0].currencyName, testedCurrencies[1].currencyName))
+            .thenReturn(Flowable.just(testedRates1[2]))
+        /*whenever(repository.getCurrencyAccount(testedCurrencies[0].currencyName))
+            .thenReturn(Flowable.just(testedCurrencies[0]))
+        whenever(repository.getCurrencyAccount(testedCurrencies[1].currencyName))
+            .thenReturn(Flowable.just(testedCurrencies[1]))*/
+        whenever(exchangerView.updateRateLabel("x1 = x2,00"))
+            .then {  }
     }
 
     @After
@@ -161,5 +173,81 @@ class ExchangerPresenterTest {
         verify(repository).updateExchangeRate(testedRates2[2])
         Thread.sleep(500)
         assertTrue(disposable.isDisposed)
+    }
+
+    @Test
+    fun currencyAccountSelectedIndexChanged() {
+        val expectedIndex = 123
+        val testedCardTypePut = ExchangeInput.CurrencyCardType.PUT
+        val testedCardTypeGet = ExchangeInput.CurrencyCardType.GET
+
+        exchangerPresenter.currencyAccountSelectedIndexChanged(expectedIndex, testedCardTypePut)
+        assertEquals(expectedIndex, ExchangeInput.putterCurrencyIndex)
+
+        exchangerPresenter.currencyAccountSelectedIndexChanged(expectedIndex, testedCardTypeGet)
+        assertEquals(expectedIndex, ExchangeInput.getterCurrencyIndex)
+    }
+
+    @Test
+    fun getExchangeRateString_whenCurrenciesDiffer() {
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getExchangeRateString", Pair::class.java)
+        testMethod.isAccessible = true
+
+        (testMethod.invoke(exchangerPresenter, Pair(testedCurrencies[0], testedCurrencies[1])) as Flowable<String>)
+            .test()
+            .awaitCount(1)
+            .assertValue("x1 = x2,00")
+    }
+
+    @Test
+    fun getExchangeRateString_whenCurrenciesSame() {
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getExchangeRateString", Pair::class.java)
+        testMethod.isAccessible = true
+
+        (testMethod.invoke(exchangerPresenter, Pair(testedCurrencies[0], testedCurrencies[0])) as Flowable<String>)
+            .test()
+            .awaitCount(1)
+            .assertValue("x1 = x1")
+    }
+
+    @Test
+    fun getCurrencyPairFlowable() {
+        val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getCurrencyPairFlowable")
+        testMethod.isAccessible = true
+        privateCurrencyList.isAccessible = true
+        privateCurrencyList.set(exchangerPresenter, testedCurrencies)
+        ExchangeInput.putterCurrencyIndex = 0
+        ExchangeInput.getterCurrencyIndex = 1
+
+        (testMethod.invoke(exchangerPresenter) as Flowable<Pair<CurrencyAccount, CurrencyAccount>>)
+            .test()
+            .awaitCount(1)
+            .assertValue(Pair(testedCurrencies[0], testedCurrencies[1]))
+    }
+
+    @Test
+    fun updateRateInfo_doNothing_whenCurrencyListEmpty() {
+        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateRateInfo")
+        val privateRateLabelUpdateFlows = exchangerPresenter.javaClass.getDeclaredField("rateLabelUpdateFlows")
+        testMethod.isAccessible = true
+        privateRateLabelUpdateFlows.isAccessible = true
+
+        testMethod.invoke(exchangerPresenter)
+
+        assertTrue((privateRateLabelUpdateFlows.get(exchangerPresenter) as CompositeDisposable).size() == 0)
+    }
+
+    @Test
+    fun subscribeCurrencyIndexObservable_updateRateInfo_whenCurrencyListFilled() {
+        exchangerPresenter.attachView(exchangerView)
+
+        val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+        privateCurrencyList.isAccessible = true
+        privateCurrencyList.set(exchangerPresenter, testedCurrencies)
+        ExchangeInput.putterCurrencyIndex = 0
+        ExchangeInput.getterCurrencyIndex = 1
+
+        verify(exchangerView).updateRateLabel("x1 = x2,00")
     }
 }
