@@ -1,6 +1,8 @@
 package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
+import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.functions.BiFunction
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -75,18 +77,19 @@ class CurrencyCardPresenter @Inject constructor(
     }
 
     private fun startExchangeValuesObservation() {
-        subscribeInputObservable(ExchangeInput.putterValueObservable)
-        subscribeInputObservable(ExchangeInput.getterValueObservable)
+        subscribeInputObservable(ExchangeInput.putterValueObservable, ExchangeInput.CurrencyCardType.PUT)
+        subscribeInputObservable(ExchangeInput.getterValueObservable, ExchangeInput.CurrencyCardType.GET)
         subscribeCurrencyIndexObservable(ExchangeInput.putterCurrencyIndexObservable, ExchangeInput.CurrencyCardType.PUT)
         subscribeCurrencyIndexObservable(ExchangeInput.getterCurrencyIndexObservable, ExchangeInput.CurrencyCardType.GET)
 
     }
 
-    private fun subscribeInputObservable(subject: BehaviorSubject<*>) =
+    private fun subscribeInputObservable(subject: BehaviorSubject<String>, cardType: ExchangeInput.CurrencyCardType) =
         subject
             .debounce(500, TimeUnit.MILLISECONDS)
             .subscribeOn(schedulerProvider.single())
             .observeOn(schedulerProvider.ui())
+            .filter { cardType == ExchangeInput.inputFocus }
             .subscribeBy(
                 onNext = {
                     Timber.d("Input value changed. Handling: $it (focus: ${ExchangeInput.inputFocus.toString()})")
@@ -123,13 +126,8 @@ class CurrencyCardPresenter @Inject constructor(
 
     private fun recountExchangeValues() {
         if(currencyList == null) return
-        getCurrencyPairFlowable(
-            currencyList!![ExchangeInput.putterCurrencyIndex],
-            currencyList!![ExchangeInput.getterCurrencyIndex]
-        )
-            .distinct()
-            .doOnNext { Timber.d("Changed currencies. Updating exchange values: %s", it) }
-            .flatMap { getRecountedExchangeValues(it) }
+        getCurrencyPair()
+            .flatMapPublisher { getRecountedExchangeValues(it) }
             .subscribeOn(schedulerProvider.io())
             .observeOn(schedulerProvider.ui())
             .subscribeBy(
@@ -142,19 +140,18 @@ class CurrencyCardPresenter @Inject constructor(
             )
     }
 
-    private fun getCurrencyPairFlowable(firstCurrency: CurrencyAccount, secondCurrency: CurrencyAccount) =
+    private fun getCurrencyPair() =
         Flowable.zip(
-            currencyAccountInteractor.getCurrencyAccount
-                .apply { requiredCurrencyName = firstCurrency.currencyName }
-                .execute(),
-            currencyAccountInteractor.getCurrencyAccount
-                .apply { requiredCurrencyName = secondCurrency.currencyName }
-                .execute(),
-            BiFunction<CurrencyAccount, CurrencyAccount, Pair<CurrencyAccount, CurrencyAccount>> {
-                    baseCurrency, ratedCurrency ->
-                Pair(baseCurrency, ratedCurrency)
+            ExchangeInput.putterCurrencyIndexObservable
+                .toFlowable(BackpressureStrategy.LATEST),
+            ExchangeInput.getterCurrencyIndexObservable
+                .toFlowable(BackpressureStrategy.LATEST),
+            BiFunction<Int, Int, Pair<CurrencyAccount, CurrencyAccount>> {
+                    baseCurrencyIndex, ratedCurrencyIndex ->
+                Pair(currencyList!![baseCurrencyIndex], currencyList!![ratedCurrencyIndex])
             }
         )
+            .firstOrError()
 
     private fun getRecountedExchangeValues(currencyPair: Pair<CurrencyAccount, CurrencyAccount>) =
         getExchangeRate(currencyPair)
@@ -176,9 +173,19 @@ class CurrencyCardPresenter @Inject constructor(
                 .distinct()
 
     private fun recountExchangeValuePut(baseValue: String, rate: Float) =
-        if(baseValue != "") baseValue.replace(",", ".").toFloat() / rate else 0f
+        when {
+            ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.PUT -> ExchangeInput.putterValue.toFloatSafe()
+            baseValue != "" -> baseValue.toFloatSafe() / rate
+            else -> 0f
+        }
 
     private fun recountExchangeValueGet(baseValue: String, rate: Float) =
-        if(baseValue != "") baseValue.replace(",", ".").toFloat() * rate else 0f
+        when {
+            ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.GET -> ExchangeInput.getterValue.toFloatSafe()
+            baseValue != "" -> baseValue.toFloatSafe() * rate
+            else -> 0f
+        }
 
+    private fun String.toFloatSafe() =
+        this.replace(",", ".").toFloat()
 }

@@ -83,7 +83,7 @@ class ExchangerPresenterTest {
     @Test
     fun initCurrencies_doNothing_whenCurrenciesExists() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("initCurrencies")
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter) as Disposable
 
         verify(repository, never()).addCurrencyList(standartCurrencies)
@@ -96,7 +96,7 @@ class ExchangerPresenterTest {
         whenever(repository.getCurrencyCount()).thenReturn(Flowable.just(0))
 
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("initCurrencies")
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter) as Disposable
 
         verify(repository).addCurrencyList(standartCurrencies)
@@ -107,7 +107,7 @@ class ExchangerPresenterTest {
     @Test
     fun addStarterCurrencies() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("addStarterCurrencies")
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter) as Disposable
 
         verify(repository).addCurrencyList(standartCurrencies)
@@ -118,9 +118,9 @@ class ExchangerPresenterTest {
     @Test
     fun startRatesUpdate() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("startRatesUpdate")
+            .also { it.isAccessible = true }
         val compositeDisposableField = exchangerPresenter.javaClass.superclass?.getDeclaredField("compositeDisposable")!!
-        testMethod.isAccessible = true
-        compositeDisposableField.isAccessible = true
+            .also { it.isAccessible = true }
         testMethod.invoke(exchangerPresenter)
         val compositeDisposable = compositeDisposableField.get(exchangerPresenter) as CompositeDisposable
 
@@ -138,7 +138,7 @@ class ExchangerPresenterTest {
     @Test
     fun updateRatesForCurrency() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateRatesForCurrency", CurrencyAccount::class.java)
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter, testedCurrencies[0]) as Disposable
 
         verify(repository).downloadExchangeRatesInPeriod(testedCurrencies[0].currencyName, 30)
@@ -152,7 +152,7 @@ class ExchangerPresenterTest {
     @Test
     fun addOrUpdateExchangeRates_createsRate() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("addOrUpdateExchangeRates", List::class.java)
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter, testedRates1) as Disposable
 
         verify(repository).addExchangeRate(testedRates1[0])
@@ -165,7 +165,7 @@ class ExchangerPresenterTest {
     @Test
     fun addOrUpdateExchangeRates_updatesRate() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("addOrUpdateExchangeRates", List::class.java)
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
         val disposable = testMethod.invoke(exchangerPresenter, testedRates2) as Disposable
 
         verify(repository).updateExchangeRate(testedRates2[0])
@@ -191,7 +191,7 @@ class ExchangerPresenterTest {
     @Test
     fun getExchangeRateString_whenCurrenciesDiffer() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getExchangeRateString", Pair::class.java)
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
 
         (testMethod.invoke(exchangerPresenter, Pair(testedCurrencies[0], testedCurrencies[1])) as Flowable<String>)
             .test()
@@ -202,7 +202,7 @@ class ExchangerPresenterTest {
     @Test
     fun getExchangeRateString_whenCurrenciesSame() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getExchangeRateString", Pair::class.java)
-        testMethod.isAccessible = true
+            .also { it.isAccessible = true }
 
         (testMethod.invoke(exchangerPresenter, Pair(testedCurrencies[0], testedCurrencies[0])) as Flowable<String>)
             .test()
@@ -213,9 +213,9 @@ class ExchangerPresenterTest {
     @Test
     fun getCurrencyPairFlowable() {
         val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+            .also { it.isAccessible = true }
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("getCurrencyPairFlowable")
-        testMethod.isAccessible = true
-        privateCurrencyList.isAccessible = true
+            .also { it.isAccessible = true }
         privateCurrencyList.set(exchangerPresenter, testedCurrencies)
         ExchangeInput.putterCurrencyIndex = 0
         ExchangeInput.getterCurrencyIndex = 1
@@ -229,9 +229,9 @@ class ExchangerPresenterTest {
     @Test
     fun updateRateInfo_doNothing_whenCurrencyListEmpty() {
         val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateRateInfo")
+            .also { it.isAccessible = true }
         val privateRateLabelUpdateFlows = exchangerPresenter.javaClass.getDeclaredField("rateLabelUpdateFlows")
-        testMethod.isAccessible = true
-        privateRateLabelUpdateFlows.isAccessible = true
+            .also { it.isAccessible = true }
 
         testMethod.invoke(exchangerPresenter)
 
@@ -243,7 +243,7 @@ class ExchangerPresenterTest {
         exchangerPresenter.attachView(exchangerView)
 
         val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
-        privateCurrencyList.isAccessible = true
+            .also { it.isAccessible = true }
         privateCurrencyList.set(exchangerPresenter, testedCurrencies)
         ExchangeInput.putterCurrencyIndex = 0
         ExchangeInput.getterCurrencyIndex = 1

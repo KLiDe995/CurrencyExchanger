@@ -17,6 +17,7 @@ import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import ru.ivglv.currencyexchanger.scheduler.BaseSchedulerProvider
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.ExchangerView
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +32,7 @@ class ExchangerPresenter @Inject constructor(
     private val currencyNetFlows = CompositeDisposable()
     private val rateLabelUpdateFlows = CompositeDisposable()
     private var currencyList: List<CurrencyAccount>? = null
+    private var currentRateString = ""
 
     override fun onFirstViewAttach() {
         initCurrencies()
@@ -181,7 +183,6 @@ class ExchangerPresenter @Inject constructor(
     private fun updateRateInfo() {
         if(currencyList == null) return
         getCurrencyPairFlowable()
-            .distinct()
             .subscribeOn(schedulerProvider.io())
             .doOnNext { Timber.d("Changed currencies. Updating rate label: %s", it) }
             .flatMap {
@@ -191,6 +192,7 @@ class ExchangerPresenter @Inject constructor(
             .subscribeBy(
                 onNext = {
                     Timber.d("Rate label updated: %s", it)
+                    currentRateString = it
                     viewState.updateRateLabel(it) },
                 onError = {
                     Timber.e(it)
@@ -225,4 +227,5 @@ class ExchangerPresenter @Inject constructor(
                 .observeOn(schedulerProvider.single())
                 .doOnNext { Timber.d("Got exchange rate %s", it) }
                 .map { String.format("${currencyPair.first.currencySymbol}1 = ${currencyPair.second.currencySymbol}%.2f", it.rate) }
+                .filter { it != currentRateString }
 }

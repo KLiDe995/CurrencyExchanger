@@ -81,8 +81,16 @@ class CurrencyPagerAdapter(
         Timber.d("Trying to change value label. CardType: $cardType; input focus: ${ExchangeInput.inputFocus}")
         if(ExchangeInput.inputFocus != null && ExchangeInput.inputFocus != cardType)
             when(cardType) {
-                ExchangeInput.CurrencyCardType.PUT -> exchangeInputTextEditList[ExchangeInput.putterCurrencyIndex].setText(String.format("%.2f", recountedValuePair.first))
-                ExchangeInput.CurrencyCardType.GET -> exchangeInputTextEditList[ExchangeInput.getterCurrencyIndex].setText(String.format("%.2f", recountedValuePair.second))
+                ExchangeInput.CurrencyCardType.PUT ->
+                    exchangeInputTextEditList[ExchangeInput.putterCurrencyIndex]
+                        .setText(
+                            if(recountedValuePair.first == 0f) ""
+                            else String.format("%.2f", recountedValuePair.first))
+                ExchangeInput.CurrencyCardType.GET ->
+                    exchangeInputTextEditList[ExchangeInput.getterCurrencyIndex]
+                        .setText(
+                            if(recountedValuePair.second == 0f) ""
+                            else String.format("%.2f", recountedValuePair.second))
             }
     }
 }
