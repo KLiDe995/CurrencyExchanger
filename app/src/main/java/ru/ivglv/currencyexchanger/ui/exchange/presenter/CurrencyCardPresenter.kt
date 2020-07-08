@@ -3,7 +3,9 @@ package ru.ivglv.currencyexchanger.ui.exchange.presenter
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.functions.BiFunction
+import io.reactivex.rxjava3.kotlin.addTo
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import moxy.InjectViewState
@@ -26,7 +28,13 @@ class CurrencyCardPresenter @Inject constructor(
     private var exchangeRateInteractor: ExchangeRateInteractor,
     private var schedulerProvider: BaseSchedulerProvider
 ) : BasePresenter<CurrencyAccountView>() {
-    private var currencyList: List<CurrencyAccount>? = null
+    //private var updateValueFlows = CompositeDisposable()
+    private var currencyList: List<CurrencyAccount> = listOf()
+        set(value) {
+            field = value
+            currencyListObservable.onNext(value)
+        }
+    private val currencyListObservable = BehaviorSubject.createDefault(currencyList)
 
     override fun onFirstViewAttach() {
         startCurrenciesObservation()
@@ -77,58 +85,24 @@ class CurrencyCardPresenter @Inject constructor(
     }
 
     private fun startExchangeValuesObservation() {
-        subscribeInputObservable(ExchangeInput.putterValueObservable, ExchangeInput.CurrencyCardType.PUT)
-        subscribeInputObservable(ExchangeInput.getterValueObservable, ExchangeInput.CurrencyCardType.GET)
-        subscribeCurrencyIndexObservable(ExchangeInput.putterCurrencyIndexObservable, ExchangeInput.CurrencyCardType.PUT)
-        subscribeCurrencyIndexObservable(ExchangeInput.getterCurrencyIndexObservable, ExchangeInput.CurrencyCardType.GET)
-
-    }
-
-    private fun subscribeInputObservable(subject: BehaviorSubject<String>, cardType: ExchangeInput.CurrencyCardType) =
-        subject
-            .debounce(500, TimeUnit.MILLISECONDS)
-            .subscribeOn(schedulerProvider.single())
-            .observeOn(schedulerProvider.ui())
-            .filter { cardType == ExchangeInput.inputFocus }
+        currencyListObservable.toFlowable(BackpressureStrategy.LATEST)
+            .filter { it.isNotEmpty() }
             .subscribeBy(
                 onNext = {
-                    Timber.d("Input value changed. Handling: $it (focus: ${ExchangeInput.inputFocus.toString()})")
+                    Timber.d("Start recounting value routine (OBSERVE VALUES)...")
                     recountExchangeValues()
                 },
-                onError = {
-                    Timber.e(it)
-                }
+                onError = { Timber.e(it) }
             )
-
-    private fun subscribeCurrencyIndexObservable(subject: BehaviorSubject<Int>, cardType: ExchangeInput.CurrencyCardType) =
-        subject
-            .subscribeOn(schedulerProvider.single())
-            .observeOn(schedulerProvider.ui())
-            .subscribeBy(
-                onNext = {
-                    Timber.d("Currency Index changed. Handling: $it (focus: ${ExchangeInput.inputFocus.toString()})")
-                    if(ExchangeInput.inputFocus == cardType)
-                        resetInputValue(cardType)
-                    else
-                        recountExchangeValues()
-                },
-                onError = {
-                    Timber.e(it)
-                }
-            )
-
-    private fun resetInputValue(resettedCardType: ExchangeInput.CurrencyCardType) {
-        when(resettedCardType) {
-            ExchangeInput.CurrencyCardType.PUT -> ExchangeInput.putterValue = ""
-            ExchangeInput.CurrencyCardType.GET -> ExchangeInput.getterValue = ""
-        }
     }
 
     private fun recountExchangeValues() {
-        if(currencyList == null) return
-        getCurrencyPair()
-            .flatMapPublisher { getRecountedExchangeValues(it) }
-            .subscribeOn(schedulerProvider.io())
+        getCurrencyPairFlowable()
+            .subscribeOn(schedulerProvider.single())
+            .observeOn(schedulerProvider.io())
+            .flatMap {
+                getRecountedExchangeValues(it)
+            }
             .observeOn(schedulerProvider.ui())
             .subscribeBy(
                 onNext = {
@@ -140,18 +114,19 @@ class CurrencyCardPresenter @Inject constructor(
             )
     }
 
-    private fun getCurrencyPair() =
-        Flowable.zip(
+    private fun getCurrencyPairFlowable() =
+        Flowable.merge(
+            ExchangeInput.putterValueObservable
+                .toFlowable(BackpressureStrategy.LATEST),
+            ExchangeInput.getterValueObservable
+                .toFlowable(BackpressureStrategy.LATEST),
             ExchangeInput.putterCurrencyIndexObservable
                 .toFlowable(BackpressureStrategy.LATEST),
             ExchangeInput.getterCurrencyIndexObservable
-                .toFlowable(BackpressureStrategy.LATEST),
-            BiFunction<Int, Int, Pair<CurrencyAccount, CurrencyAccount>> {
-                    baseCurrencyIndex, ratedCurrencyIndex ->
-                Pair(currencyList!![baseCurrencyIndex], currencyList!![ratedCurrencyIndex])
-            }
+                .toFlowable(BackpressureStrategy.LATEST)
         )
-            .firstOrError()
+            .distinctUntilChanged()
+            .map { Pair(currencyList[ExchangeInput.putterCurrencyIndex], currencyList[ExchangeInput.getterCurrencyIndex]) }
 
     private fun getRecountedExchangeValues(currencyPair: Pair<CurrencyAccount, CurrencyAccount>) =
         getExchangeRate(currencyPair)
@@ -173,19 +148,18 @@ class CurrencyCardPresenter @Inject constructor(
                 .distinct()
 
     private fun recountExchangeValuePut(baseValue: String, rate: Float) =
-        when {
-            ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.PUT -> ExchangeInput.putterValue.toFloatSafe()
-            baseValue != "" -> baseValue.toFloatSafe() / rate
-            else -> 0f
-        }
+        if (ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.PUT)
+            ExchangeInput.putterValue.toFloatSafe()
+        else
+            baseValue.toFloatSafe() / rate
 
     private fun recountExchangeValueGet(baseValue: String, rate: Float) =
-        when {
-            ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.GET -> ExchangeInput.getterValue.toFloatSafe()
-            baseValue != "" -> baseValue.toFloatSafe() * rate
-            else -> 0f
-        }
+        if(ExchangeInput.inputFocus == ExchangeInput.CurrencyCardType.GET)
+            ExchangeInput.getterValue.toFloatSafe()
+        else
+            baseValue.toFloatSafe() * rate
 
     private fun String.toFloatSafe() =
-        this.replace(",", ".").toFloat()
+        if(this != "") this.replace(",", ".").toFloat()
+        else 0f
 }

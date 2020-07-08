@@ -137,23 +137,7 @@ class CurrencyCardPresenterTest {
     }
 
     @Test
-    fun resetInputValue() {
-        val testMethod = currencyCardPresenter.javaClass.getDeclaredMethod("resetInputValue", ExchangeInput.CurrencyCardType::class.java)
-            .also { it.isAccessible = true }
-
-        val expectedValue = ""
-        ExchangeInput.putterValue = "1234"
-        ExchangeInput.getterValue = "5678"
-
-        testMethod.invoke(currencyCardPresenter, ExchangeInput.CurrencyCardType.PUT)
-        Assert.assertEquals(expectedValue, ExchangeInput.putterValue)
-
-        testMethod.invoke(currencyCardPresenter, ExchangeInput.CurrencyCardType.GET)
-        Assert.assertEquals(expectedValue, ExchangeInput.getterValue)
-    }
-
-    @Test
-    fun subscribeInputObservable_subscribeCurrencyIndexObservable() {
+    fun startExchangeValuesObservation() {
         ExchangeInput.putterCurrencyIndex = 0
         ExchangeInput.getterCurrencyIndex = 1
         testedRates[0].rate = 1.25f
@@ -161,6 +145,6 @@ class CurrencyCardPresenterTest {
 
         currencyCardPresenter.attachView(currencyAccountView)
 
-        verify(currencyAccountView, times(2)).updateRecountedValueLabel(Pair(0f, 6.5625f))
+        verify(currencyAccountView, times(4)).updateRecountedValueLabel(Pair(0f, 6.5625f))
     }
 }

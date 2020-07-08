@@ -157,12 +157,16 @@ class ExchangerPresenter @Inject constructor(
 
     fun currencyAccountSelectedIndexChanged(index: Int, currencyCardType: ExchangeInput.CurrencyCardType) {
         when(currencyCardType) {
-            ExchangeInput.CurrencyCardType.PUT ->
-                if(ExchangeInput.putterCurrencyIndex != index)
+            ExchangeInput.CurrencyCardType.PUT -> {
+                if (ExchangeInput.putterCurrencyIndex != index)
                     ExchangeInput.putterCurrencyIndex = index
-            ExchangeInput.CurrencyCardType.GET ->
+                ExchangeInput.putterValue = ""
+            }
+            ExchangeInput.CurrencyCardType.GET -> {
                 if(ExchangeInput.getterCurrencyIndex != index)
                     ExchangeInput.getterCurrencyIndex = index
+                ExchangeInput.getterValue = ""
+            }
         }
     }
 
@@ -182,20 +186,19 @@ class ExchangerPresenter @Inject constructor(
     private fun updateRateInfo() {
         getCurrencyPairFlowable()
             .subscribeOn(schedulerProvider.single())
-            .doOnNext { Timber.d("Changed currencies. Updating rate label: %s", it) }
+            .doOnNext { Timber.d("Changed currencies. Updating rate label: $it") }
             .flatMap {
                 getExchangeRateString(it)
             }
             .observeOn(schedulerProvider.ui())
             .subscribeBy(
                 onNext = {
-                    Timber.d("Rate label updated: %s", it)
+                    Timber.d("Rate label updated: $it")
                     currentRateString = it
                     viewState.updateRateLabel(it) },
                 onError = {
                     Timber.e(it)
-                },
-                onComplete = { Timber.d("Oops") }
+                }
             ).addTo(updateRateFlows)
     }
 
@@ -206,7 +209,7 @@ class ExchangerPresenter @Inject constructor(
             ExchangeInput.getterCurrencyIndexObservable
                 .toFlowable(BackpressureStrategy.LATEST)
         )
-            .debounce(100, TimeUnit.MILLISECONDS)
+            .debounce(100, TimeUnit.MILLISECONDS, schedulerProvider.computation())
             .map { Pair(currencyList[ExchangeInput.putterCurrencyIndex], currencyList[ExchangeInput.getterCurrencyIndex]) }
 
     private fun getExchangeRateString(currencyPair: Pair<CurrencyAccount, CurrencyAccount>) =
@@ -222,7 +225,7 @@ class ExchangerPresenter @Inject constructor(
                 .distinct()
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.single())
-                .doOnNext { Timber.d("Got exchange rate %s", it) }
+                .doOnNext { Timber.d("Got exchange rate $it") }
                 .map { String.format("${currencyPair.first.currencySymbol}1 = ${currencyPair.second.currencySymbol}%.2f", it.rate) }
                 .filter { it != currentRateString }
 }

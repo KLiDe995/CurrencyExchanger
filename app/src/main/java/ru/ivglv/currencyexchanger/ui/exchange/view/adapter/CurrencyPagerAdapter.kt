@@ -78,7 +78,6 @@ class CurrencyPagerAdapter(
     }
 
     override fun updateRecountedValueLabel(recountedValuePair: Pair<Float, Float>) {
-        Timber.d("Trying to change value label. CardType: $cardType; input focus: ${ExchangeInput.inputFocus}")
         if(ExchangeInput.inputFocus != null && ExchangeInput.inputFocus != cardType)
             when(cardType) {
                 ExchangeInput.CurrencyCardType.PUT ->
