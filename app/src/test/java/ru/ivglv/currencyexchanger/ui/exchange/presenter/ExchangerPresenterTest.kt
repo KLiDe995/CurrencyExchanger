@@ -227,19 +227,7 @@ class ExchangerPresenterTest {
     }
 
     @Test
-    fun updateRateInfo_doNothing_whenCurrencyListEmpty() {
-        val testMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateRateInfo")
-            .also { it.isAccessible = true }
-        val privateRateLabelUpdateFlows = exchangerPresenter.javaClass.getDeclaredField("rateLabelUpdateFlows")
-            .also { it.isAccessible = true }
-
-        testMethod.invoke(exchangerPresenter)
-
-        assertTrue((privateRateLabelUpdateFlows.get(exchangerPresenter) as CompositeDisposable).size() == 0)
-    }
-
-    @Test
-    fun subscribeCurrencyIndexObservable_updateRateInfo_whenCurrencyListFilled() {
+    fun startExchangeValuesObservation() {
         exchangerPresenter.attachView(exchangerView)
 
         val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")

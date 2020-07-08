@@ -30,9 +30,14 @@ class ExchangerPresenter @Inject constructor(
 ) : BasePresenter<ExchangerView>() {
 
     private val currencyNetFlows = CompositeDisposable()
-    private val rateLabelUpdateFlows = CompositeDisposable()
-    private var currencyList: List<CurrencyAccount>? = null
     private var currentRateString = ""
+    private val updateRateFlows = CompositeDisposable()
+    private var currencyList: List<CurrencyAccount> = listOf()
+        set(value) {
+            field = value
+            currencyListObservable.onNext(value)
+        }
+    private val currencyListObservable = BehaviorSubject.createDefault(currencyList)
 
     override fun onFirstViewAttach() {
         initCurrencies()
@@ -79,7 +84,6 @@ class ExchangerPresenter @Inject constructor(
 
     private fun startRatesUpdate() {
         val subscription = currencyAccountInteractor.getCurrencyCount.execute()
-            .subscribeOn(schedulerProvider.io())
             .flatMapSingle {
                 currencyAccountInteractor.getCurrencyList.execute()
                     .firstOrError()
@@ -88,9 +92,10 @@ class ExchangerPresenter @Inject constructor(
                         updateRatesForCurrencyList(it)
                     }
             }
+            .subscribeOn(schedulerProvider.io())
             .subscribeBy(
                 onNext = {
-                    Timber.d("Rates updated")
+                    //Timber.d("Rates updated")
                 },
                 onError = {
                     Timber.e(it)
@@ -162,28 +167,21 @@ class ExchangerPresenter @Inject constructor(
     }
 
     private fun startExchangeValuesObservation() {
-        subscribeCurrencyIndexObservable(ExchangeInput.putterCurrencyIndexObservable)
-        subscribeCurrencyIndexObservable(ExchangeInput.getterCurrencyIndexObservable)
-    }
-
-    private fun subscribeCurrencyIndexObservable(subject: BehaviorSubject<Int>) {
-        subject
-            .subscribeOn(schedulerProvider.single())
-            .observeOn(schedulerProvider.ui())
+        currencyListObservable.toFlowable(BackpressureStrategy.LATEST)
+            .filter { it.isNotEmpty() }
             .subscribeBy(
                 onNext = {
-                    rateLabelUpdateFlows.clear()
-                    updateRateInfo() },
-                onError = {
-                    Timber.e(it)
-                }
+                    Timber.d("Updating rate label...")
+                    updateRateFlows.clear()
+                    updateRateInfo()
+                },
+                onError = { Timber.e(it) }
             )
     }
 
     private fun updateRateInfo() {
-        if(currencyList == null) return
         getCurrencyPairFlowable()
-            .subscribeOn(schedulerProvider.io())
+            .subscribeOn(schedulerProvider.single())
             .doOnNext { Timber.d("Changed currencies. Updating rate label: %s", it) }
             .flatMap {
                 getExchangeRateString(it)
@@ -196,21 +194,20 @@ class ExchangerPresenter @Inject constructor(
                     viewState.updateRateLabel(it) },
                 onError = {
                     Timber.e(it)
-                }
-            ).addTo(rateLabelUpdateFlows)
+                },
+                onComplete = { Timber.d("Oops") }
+            ).addTo(updateRateFlows)
     }
 
     private fun getCurrencyPairFlowable() =
-        Flowable.zip(
+        Flowable.merge(
             ExchangeInput.putterCurrencyIndexObservable
                 .toFlowable(BackpressureStrategy.LATEST),
             ExchangeInput.getterCurrencyIndexObservable
-                .toFlowable(BackpressureStrategy.LATEST),
-            BiFunction<Int, Int, Pair<CurrencyAccount, CurrencyAccount>> {
-                baseCurrencyIndex, ratedCurrencyIndex ->
-                Pair(currencyList!![baseCurrencyIndex], currencyList!![ratedCurrencyIndex])
-            }
+                .toFlowable(BackpressureStrategy.LATEST)
         )
+            .debounce(100, TimeUnit.MILLISECONDS)
+            .map { Pair(currencyList[ExchangeInput.putterCurrencyIndex], currencyList[ExchangeInput.getterCurrencyIndex]) }
 
     private fun getExchangeRateString(currencyPair: Pair<CurrencyAccount, CurrencyAccount>) =
         if (currencyPair.first == currencyPair.second)
