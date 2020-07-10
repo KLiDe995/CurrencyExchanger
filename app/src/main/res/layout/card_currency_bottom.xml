@@ -67,7 +67,7 @@
                     android:layout_height="wrap_content"
                     android:gravity="right"
                     android:hint="@string/get_hint"
-                    android:inputType="numberSigned"
+                    android:inputType="numberDecimal"
                     android:textColor="#FFFFFF"
                     android:textSize="42sp" />
             </com.google.android.material.textfield.TextInputLayout>

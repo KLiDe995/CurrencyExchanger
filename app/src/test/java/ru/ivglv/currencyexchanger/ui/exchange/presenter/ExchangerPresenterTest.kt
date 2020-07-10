@@ -70,6 +70,16 @@ class ExchangerPresenterTest {
             .thenReturn(Flowable.just(testedRates1[2]))
         whenever(exchangerView.updateRateLabel("x1 = x2,00"))
             .then {  }
+        whenever(exchangerView.showExchangeImpossibleMessage())
+            .then {  }
+        whenever(repository.updateCurrencyValue(
+            CurrencyAccount("Test3", 2.75f, 'x')
+        ))
+            .thenReturn(Completable.complete())
+        whenever(repository.updateCurrencyValue(
+            CurrencyAccount("Test4", 4.25f, 'x')
+        ))
+            .thenReturn(Completable.complete())
     }
 
     @After
@@ -232,5 +242,65 @@ class ExchangerPresenterTest {
         ExchangeInput.getterCurrencyIndex = 1
 
         verify(exchangerView).updateRateLabel("x1 = x2,00")
+    }
+
+    @Test
+    fun updateCurrencyValue_doNothing_whenMinusValueIsNull() {
+        val testedMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateCurrencyValue", Int::class.java, Float::class.java)
+            .also { it.isAccessible = true }
+        val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+            .also { it.isAccessible = true }
+        privateCurrencyList.set(exchangerPresenter, testedCurrencies)
+
+        testedMethod.invoke(exchangerPresenter, 0, 0)
+
+        verify(repository, never()).updateCurrencyValue(testedCurrencies[0])
+    }
+
+    @Test
+    fun updateCurrencyValue() {
+        exchangerPresenter.attachView(exchangerView)
+
+        val testedMethod = exchangerPresenter.javaClass.getDeclaredMethod("updateCurrencyValue", Int::class.java, Float::class.java)
+            .also { it.isAccessible = true }
+        val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+            .also { it.isAccessible = true }
+        val newTestedCurrencies = TestHelper.createListAccounts(5)
+        privateCurrencyList.set(exchangerPresenter, newTestedCurrencies)
+
+        val updatedCurrency1 = newTestedCurrencies[3].copy()
+        updatedCurrency1.apply { value -= 0.25f }
+        val updatedCurrency2 = newTestedCurrencies[4].copy()
+        updatedCurrency2.apply { value += 0.25f }
+
+        testedMethod.invoke(exchangerPresenter, 3, 0.25f)
+        testedMethod.invoke(exchangerPresenter, 4, -0.25f)
+
+        verify(repository).updateCurrencyValue(updatedCurrency1)
+        verify(repository).updateCurrencyValue(updatedCurrency2)
+    }
+
+    @Test
+    fun checkCurrencyValue() {
+        val testedMethod = exchangerPresenter.javaClass.getDeclaredMethod("checkCurrencyValue")
+            .also { it.isAccessible = true }
+        val privateCurrencyList = exchangerPresenter.javaClass.getDeclaredField("currencyList")
+            .also { it.isAccessible = true }
+        privateCurrencyList.set(exchangerPresenter, testedCurrencies)
+
+        ExchangeInput.putterCurrencyIndex = 1
+        ExchangeInput.putterValue = "0.25"
+
+        val expected1 = true
+        val expected2 = false
+
+        val actual1 = (testedMethod.invoke(exchangerPresenter) as Boolean)
+
+        ExchangeInput.putterCurrencyIndex = 0
+
+        val actual2 = (testedMethod.invoke(exchangerPresenter) as Boolean)
+
+        assertEquals(expected1, actual1)
+        assertEquals(expected2, actual2)
     }
 }

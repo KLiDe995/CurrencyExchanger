@@ -2,10 +2,6 @@ package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
-import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.disposables.CompositeDisposable
-import io.reactivex.rxjava3.functions.BiFunction
-import io.reactivex.rxjava3.kotlin.addTo
 import io.reactivex.rxjava3.kotlin.subscribeBy
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import moxy.InjectViewState
@@ -15,9 +11,9 @@ import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.domain.model.ExchangeInput
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import ru.ivglv.currencyexchanger.scheduler.BaseSchedulerProvider
+import ru.ivglv.currencyexchanger.toFloatSafe
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.CurrencyAccountView
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,6 +41,7 @@ class CurrencyCardPresenter @Inject constructor(
         val disposable = currencyAccountInteractor.getCurrencyCount
             .execute()
             .flatMap { getCurrencyList(it) }
+            .distinctUntilChanged()
             .subscribeOn(schedulerProvider.io())
             .observeOn(schedulerProvider.ui())
             .subscribeBy(
@@ -55,7 +52,8 @@ class CurrencyCardPresenter @Inject constructor(
                 },
                 onError = {
                     Timber.e(it)
-                }
+                },
+                onComplete = { Timber.d("CurrenciesObservation stopped!") }
             )
         unsibscribeOnDestroy(disposable)
     }
@@ -159,7 +157,8 @@ class CurrencyCardPresenter @Inject constructor(
         else
             baseValue.toFloatSafe() * rate
 
-    private fun String.toFloatSafe() =
-        if(this != "") this.replace(",", ".").toFloat()
-        else 0f
+    override fun detachView(view: CurrencyAccountView?) {
+        ExchangeInput.inputFocus = null
+        super.detachView(view)
+    }
 }

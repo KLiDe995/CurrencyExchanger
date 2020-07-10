@@ -29,13 +29,15 @@ class CurrencyPagerAdapter(
     fun providePresenter(): CurrencyCardPresenter = ExchangeApp.appComponent.currencyCardPresenter()
 
     private var currencyAccountList = listOf<CurrencyAccount>()
-    private var exchangeInputTextEditList = mutableListOf<TextInputEditText>()
+    private var exchangeInputTextEditList = mutableMapOf<Int, TextInputEditText>()
+    private var currencyValueLabelList = mutableMapOf<Int, TextView>()
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
+        Timber.d("Instantiating view for VIEW CARD $cardType")
         val view = LayoutInflater.from(container.context).inflate(cardCurrencylayout, container, false)
-        exchangeInputTextEditList.add(position, view.findViewById<TextInputEditText>(R.id.exchangeValueInput) as TextInputEditText)
+        exchangeInputTextEditList[position] = view.findViewById(R.id.exchangeValueInput)
         setLabels(view, position)
-        initListeners(view, position)
+        initListeners(position)
         container.addView(view)
         return view
     }
@@ -52,18 +54,22 @@ class CurrencyPagerAdapter(
 
     private fun setLabels(view: View, position: Int) {
         val currencyNameLabel = view.findViewById<TextView>(R.id.currencyNameLabel)
-        val currencyValueLabel = view.findViewById<TextView>(R.id.currencyValueLabel)
+        currencyValueLabelList[position] = view.findViewById(R.id.currencyValueLabel)
         currencyNameLabel.text = currencyAccountList[position].currencyName
-        currencyValueLabel.text =
-            String.format("${currencyAccountList[position].currencySymbol}%.2f", currencyAccountList[position].value)
+        updateValueLabel()
     }
 
-    private fun initListeners(view: View, position: Int) {
-        exchangeInputTextEditList[position].doOnTextChanged {
+    private fun updateValueLabel() {
+        for(i in 0 until currencyValueLabelList.count())
+            currencyValueLabelList[i]?.text = String.format("${currencyAccountList[i].currencySymbol}%.2f", currencyAccountList[i].value)
+    }
+
+    private fun initListeners(position: Int) {
+        exchangeInputTextEditList[position]?.doOnTextChanged {
                 text, _, _, _ ->
             currencyCardPresenter.exchangeValueInputChanged(text.toString(), cardType)
         }
-        exchangeInputTextEditList[position].onFocusChangeListener =
+        exchangeInputTextEditList[position]?.onFocusChangeListener =
             View.OnFocusChangeListener { view, hasFocus ->
                 if(hasFocus) {
                     currencyCardPresenter.exchangeValueInputChanged((view as TextInputEditText).text.toString(), cardType)
@@ -75,19 +81,22 @@ class CurrencyPagerAdapter(
     override fun updateCurrencies(updatedCurrencies: List<CurrencyAccount>) {
         currencyAccountList = updatedCurrencies
         notifyDataSetChanged()
+        updateValueLabel()
     }
 
     override fun updateRecountedValueLabel(recountedValuePair: Pair<Float, Float>) {
-        if(ExchangeInput.inputFocus != null && ExchangeInput.inputFocus != cardType)
+        if(exchangeInputTextEditList.isNotEmpty() &&
+            ExchangeInput.inputFocus != null &&
+            ExchangeInput.inputFocus != cardType)
             when(cardType) {
                 ExchangeInput.CurrencyCardType.PUT ->
                     exchangeInputTextEditList[ExchangeInput.putterCurrencyIndex]
-                        .setText(
+                        ?.setText(
                             if(recountedValuePair.first == 0f) ""
                             else String.format("%.2f", recountedValuePair.first))
                 ExchangeInput.CurrencyCardType.GET ->
                     exchangeInputTextEditList[ExchangeInput.getterCurrencyIndex]
-                        .setText(
+                        ?.setText(
                             if(recountedValuePair.second == 0f) ""
                             else String.format("%.2f", recountedValuePair.second))
             }

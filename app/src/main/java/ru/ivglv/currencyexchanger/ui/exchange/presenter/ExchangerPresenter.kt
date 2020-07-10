@@ -1,5 +1,6 @@
 package ru.ivglv.currencyexchanger.ui.exchange.presenter
 
+import android.view.View
 import io.reactivex.rxjava3.core.BackpressureStrategy
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.disposables.CompositeDisposable
@@ -15,6 +16,7 @@ import ru.ivglv.currencyexchanger.domain.model.CurrencyAccount
 import ru.ivglv.currencyexchanger.domain.model.ExchangeInput
 import ru.ivglv.currencyexchanger.domain.model.ExchangeRate
 import ru.ivglv.currencyexchanger.scheduler.BaseSchedulerProvider
+import ru.ivglv.currencyexchanger.toFloatSafe
 import ru.ivglv.currencyexchanger.ui.exchange.presenter.view.ExchangerView
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -28,6 +30,7 @@ class ExchangerPresenter @Inject constructor(
     private var exchangeRateInteractor: ExchangeRateInteractor,
     private var schedulerProvider: BaseSchedulerProvider
 ) : BasePresenter<ExchangerView>() {
+    private val FLOAT_DIFF_EPS = 0.001f
 
     private val currencyNetFlows = CompositeDisposable()
     private var currentRateString = ""
@@ -186,7 +189,10 @@ class ExchangerPresenter @Inject constructor(
     private fun updateRateInfo() {
         getCurrencyPairFlowable()
             .subscribeOn(schedulerProvider.single())
-            .doOnNext { Timber.d("Changed currencies. Updating rate label: $it") }
+            .doOnNext { Timber.d("Changed currencies. Updating rate label: $it; Updating button visibility") }
+            .observeOn(schedulerProvider.ui())
+            .doOnNext { updateButtonVisibility() }
+            .observeOn(schedulerProvider.io())
             .flatMap {
                 getExchangeRateString(it)
             }
@@ -212,6 +218,13 @@ class ExchangerPresenter @Inject constructor(
             .debounce(100, TimeUnit.MILLISECONDS, schedulerProvider.computation())
             .map { Pair(currencyList[ExchangeInput.putterCurrencyIndex], currencyList[ExchangeInput.getterCurrencyIndex]) }
 
+    private fun updateButtonVisibility() {
+        if(ExchangeInput.getterCurrencyIndex == ExchangeInput.putterCurrencyIndex)
+            viewState.updateButtonVisibility(View.INVISIBLE)
+        else
+            viewState.updateButtonVisibility(View.VISIBLE)
+    }
+
     private fun getExchangeRateString(currencyPair: Pair<CurrencyAccount, CurrencyAccount>) =
         if (currencyPair.first == currencyPair.second)
             Flowable.just(String.format("${currencyPair.first.currencySymbol}1 = ${currencyPair.second.currencySymbol}1"))
@@ -228,4 +241,35 @@ class ExchangerPresenter @Inject constructor(
                 .doOnNext { Timber.d("Got exchange rate $it") }
                 .map { String.format("${currencyPair.first.currencySymbol}1 = ${currencyPair.second.currencySymbol}%.2f", it.rate) }
                 .filter { it != currentRateString }
+
+    fun exchangeButtonClicked() {
+        if(checkCurrencyValue())
+            exchangeValues()
+        else
+            viewState.showExchangeImpossibleMessage()
+    }
+
+    private fun checkCurrencyValue() =
+        currencyList[ExchangeInput.putterCurrencyIndex].value - ExchangeInput.putterValue.toFloatSafe() >= FLOAT_DIFF_EPS
+
+    private fun exchangeValues() {
+        updateCurrencyValue(ExchangeInput.putterCurrencyIndex, ExchangeInput.putterValue.toFloatSafe())
+        updateCurrencyValue(ExchangeInput.getterCurrencyIndex, ExchangeInput.getterValue.toFloatSafe().unaryMinus())
+    }
+
+    private fun updateCurrencyValue(index: Int, minusValue: Float) {
+        if(minusValue < FLOAT_DIFF_EPS && minusValue > -FLOAT_DIFF_EPS) return
+        currencyAccountInteractor.updateCurrencyValue
+            .apply {
+                updatedCurrencyAccount = currencyList[index].apply {
+                    value -= minusValue
+                }
+            }
+            .execute()
+            .subscribeOn(schedulerProvider.io())
+            .subscribeBy(
+                onComplete = { Timber.d("Currency ${currencyList[index].currencyName} updated") },
+                onError = { Timber.e(it) }
+            )
+    }
 }
